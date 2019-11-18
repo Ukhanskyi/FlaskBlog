@@ -53,6 +53,7 @@ numpy==1.17.4
 pandas==0.24.2
 parsedatetime==2.4
 pathlib2==2.3.5
+Pillow==6.2.1
 polyline==1.4.0
 prison==0.1.2
 pycparser==2.19
