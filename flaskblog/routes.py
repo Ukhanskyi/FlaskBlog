@@ -44,7 +44,7 @@ def home():
 
 @app.route("/about")
 def about():
-    image_file = url_for('static', filename='images/' + current_user.image_file)
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
     return render_template('about.html', title='About', image_file=image_file)
 
 
