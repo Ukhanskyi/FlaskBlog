@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from datetime import datetime, timedelta
 import unittest
 from flaskblog import app, db
@@ -27,8 +26,8 @@ class UserModelCase(unittest.TestCase):
                                          '?d=identicon&s=128'))
 
     def test_follow(self):
-        u1 = User(username='john', email='john@example.com')
-        u2 = User(username='susan', email='susan@example.com')
+        u1 = User(username='john', email='john@example.com', image_file='default.jpg', password='cat', about_me='lalal')
+        u2 = User(username='susan', email='susan@example.com', image_file='default.jpg', password='dog', about_me='pap')
         db.session.add(u1)
         db.session.add(u2)
         db.session.commit()
@@ -51,22 +50,18 @@ class UserModelCase(unittest.TestCase):
 
     def test_follow_posts(self):
         # create four users
-        u1 = User(username='john', email='john@example.com')
-        u2 = User(username='susan', email='susan@example.com')
-        u3 = User(username='mary', email='mary@example.com')
-        u4 = User(username='david', email='david@example.com')
+        u1 = User(username='john', email='john@example.com', image_file='default.jpg', password='cat', about_me='lalal')
+        u2 = User(username='susan', email='susan@example.com', image_file='default.jpg', password='dog', about_me='pap')
+        u3 = User(username='mary', email='mary@example.com', image_file='default.jpg', password='pat', about_me='sasas')
+        u4 = User(username='david', email='david@example.com', image_file='default.jpg', password='fat', about_me='opo')
         db.session.add_all([u1, u2, u3, u4])
 
         # create four posts
         now = datetime.utcnow()
-        p1 = Post(body="post from john", author=u1,
-                  timestamp=now + timedelta(seconds=1))
-        p2 = Post(body="post from susan", author=u2,
-                  timestamp=now + timedelta(seconds=4))
-        p3 = Post(body="post from mary", author=u3,
-                  timestamp=now + timedelta(seconds=3))
-        p4 = Post(body="post from david", author=u4,
-                  timestamp=now + timedelta(seconds=2))
+        p1 = Post(title='post from john', author=u1, date_posted=now + timedelta(seconds=1), content='qwerty1')
+        p2 = Post(title='post from susan', author=u2, date_posted=now + timedelta(seconds=4), content='qwerty2')
+        p3 = Post(title='post from mary', author=u3, date_posted=now + timedelta(seconds=3), content='qwerty3')
+        p4 = Post(title='post from david', author=u4, date_posted=now + timedelta(seconds=2), content='qwerty4')
         db.session.add_all([p1, p2, p3, p4])
         db.session.commit()
 

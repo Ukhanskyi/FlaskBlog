@@ -4,9 +4,18 @@ from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, Post
 from flaskblog.models import User, Post
 from flask_login import login_user, current_user, logout_user, login_required
 import os
+import errno
 import secrets
 from PIL import Image
 from datetime import datetime
+
+
+def make_sure_path_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
 
 
 def save_picture(form_picture):
@@ -97,6 +106,12 @@ def account():
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.about_me = form.about_me.data
+        if bcrypt.check_password_hash(current_user.password, form.old_pass.data):
+            hashed_password = bcrypt.generate_password_hash(form.new_pass.data).decode('utf-8')
+            current_user.password = hashed_password
+        else:
+            flash('Old password is wrong!', 'danger')
+            return redirect('account')
         db.session.commit()
         flash('Your account has been updated!', 'success')
         return redirect(url_for('account'))
@@ -204,7 +219,7 @@ def unfollow(username):
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
-    form = EditProfileForm()
+    form = EditProfileForm(current_user.username)
     if form.validate_on_submit():
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
