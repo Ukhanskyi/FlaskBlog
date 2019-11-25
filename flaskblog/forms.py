@@ -34,9 +34,9 @@ class UpdateAccountForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=20)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     about_me = TextAreaField('About Me')
-    old_pass = PasswordField('Old password', validators=[DataRequired()])
-    new_pass = PasswordField('New password', validators=[DataRequired()])
-    confirm_pass = PasswordField('Confirm password', validators=[DataRequired(), EqualTo('new_pass')])
+    old_pass = PasswordField('Old password')
+    new_pass = PasswordField('New password')
+    confirm_pass = PasswordField('Confirm password', validators=[EqualTo('new_pass')])
     picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
     submit = SubmitField('Update')
 

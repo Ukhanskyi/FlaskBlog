@@ -42,7 +42,8 @@ def before_request():
 @app.route("/")
 @app.route("/home")
 def home():
-    posts = Post.query.all()
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=5)
     return render_template('home.html', posts=posts)
 
 
@@ -106,12 +107,7 @@ def account():
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.about_me = form.about_me.data
-        if bcrypt.check_password_hash(current_user.password, form.old_pass.data):
-            hashed_password = bcrypt.generate_password_hash(form.new_pass.data).decode('utf-8')
-            current_user.password = hashed_password
-        else:
-            flash('Old password is wrong!', 'danger')
-            return redirect('account')
+
         db.session.commit()
         flash('Your account has been updated!', 'success')
         return redirect(url_for('account'))
@@ -127,11 +123,9 @@ def account():
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    posts = [
-        {'author': user, 'body': 'Test post #1'},
-        {'author': user, 'body': 'Test post #2'}
-    ]
-    return render_template('user.html', user=user, posts=posts)
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.filter_by(user_id=user.id).paginate(page, 10, False)
+    return render_template('user.html', user=user, posts=posts.items)
 
 
 @app.route("/post/new", methods=['GET', 'POST'])
