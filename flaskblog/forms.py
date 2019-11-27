@@ -73,3 +73,14 @@ class EditProfileForm(FlaskForm):
             user = User.query.filter_by(username=self.username.data).first()
             if user is not None:
                 raise ValidationError('Please use a different username.')
+
+
+class AdminUserCreateForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    admin = BooleanField('Is Admin ?')
+
+
+class AdminUserUpdateForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    admin = BooleanField('Is Admin ?')

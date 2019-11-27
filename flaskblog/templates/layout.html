@@ -32,6 +32,9 @@
             <!-- Navbar Right Side -->
             <div class="navbar-nav">
               {% if current_user.is_authenticated %}
+                {% if current_user.has_role('admin') %}
+                    <a class="nav-item nav-link" href="{{ url_for('admin.index') }}">Admin</a>
+                {% endif %}
                 <a class="nav-item nav-link" href="{{ url_for('new_post') }}">New Post</a>
                 <a class="nav-item nav-link" href="{{ url_for('account') }}">Account</a>
                 <a class="nav-item nav-link" href="{{ url_for('user', username=current_user.username) }}">Profile</a>
@@ -48,7 +51,7 @@
     <main role="main" class="container">
       <div class="row">
         <div class="col-md-8">
-          {% with messages = get_flashed_messages(with_categories=true) %}
+{#          {% with messages = get_flashed_messages(with_categories=true) %}#}
             {% if messages %}
               {% for category, message in messages %}
                 <div class="alert alert-{{ category }}">
@@ -56,7 +59,7 @@
                 </div>
               {% endfor %}
             {% endif %}
-          {% endwith %}
+{#          {% endwith %}#}
           {% block content %}{% endblock %}
         </div>
         <div class="col-md-4">

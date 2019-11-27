@@ -2,7 +2,8 @@ from flask import render_template, url_for, flash, redirect, request, abort
 from flaskblog import app, db, bcrypt
 from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm, EditProfileForm
 from flaskblog.models import User, Post
-from flask_login import login_user, current_user, logout_user, login_required
+from flask_security import login_required
+from flask_login import login_user, current_user, logout_user
 import os
 import errno
 import secrets
@@ -53,6 +54,7 @@ def home():
 
 
 @app.route("/about")
+@login_required
 def about():
     image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
     return render_template('about.html', title='About', image_file=image_file)
@@ -107,6 +109,13 @@ def account():
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.about_me = form.about_me.data
+
+        if form.old_pass.data and bcrypt.check_password_hash(current_user.password, form.old_pass.data):
+            hashed_password = bcrypt.generate_password_hash(form.new_pass.data).decode('utf-8')
+            current_user.password = hashed_password
+        elif form.old_pass.data and bcrypt.check_password_hash(current_user.password, form.old_pass.data) == False:
+            flash('Old password is wrong!', 'danger')
+            return redirect('account')
 
         db.session.commit()
         flash('Your account has been updated!', 'success')
