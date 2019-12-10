@@ -10,7 +10,6 @@
                 <p class="text-secondary">Last seen on: {{ current_user.last_seen }}</p>
     		</div>
     	</div>
-        <div class="content-section">
         <form method="POST" action="" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             <fieldset class="form-group">
@@ -54,7 +53,6 @@
                         {{ form.about_me(class="form-control form-control-lg") }}
                     {% endif %}
                 </div>
-
                 <div class="form-group">
                     {{ form.old_pass.label(class="form-control-label") }}
                     {% if form.old_pass.errors %}
@@ -94,7 +92,6 @@
                         {{ form.confirm_pass(class="form-control form-control-lg") }}
                     {% endif %}
                 </div>
-
                 <div class="form-group">
                 	{{ form.picture.label() }}
                 	{{ form.picture(class="form-control-file") }}
@@ -109,11 +106,10 @@
                 {{ form.submit(class="btn btn-outline-info") }}
             </div>
         </form>
-        </div>
-        <div class="border-top pt-3">
-            <small class="text-muted">
-                Already Have An Account? <a class="ml-2" href="{{ url_for('login') }}">Sign In</a>
-            </small>
-        </div>
+    </div>
+    <div class="border-top pt-3">
+        <small class="text-muted">
+            Already Have An Account? <a class="ml-2" href="{{ url_for('login') }}">Sign In</a>
+        </small>
     </div>
 {% endblock content %}

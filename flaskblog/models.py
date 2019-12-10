@@ -1,8 +1,11 @@
-from hashlib import md5
 from datetime import datetime
-from flaskblog import db, login_manager
-from flask_security import RoleMixin, UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
+from flaskblog import db, login_manager, bcrypt
+from flask_login import UserMixin
+from hashlib import md5
+from wtforms import BooleanField, widgets, TextAreaField
+
+
+# from flask_ckeditor import CKEditorField
 
 
 @login_manager.user_loader
@@ -15,11 +18,6 @@ followers = db.Table('followers',
                      db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
                      )
 
-roles_users = db.Table('roles_users',
-                       db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-                       db.Column('role_id', db.Integer(), db.ForeignKey('role.id'))
-                       )
-
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,19 +25,30 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
     password = db.Column(db.String(60), nullable=False)
-    active = db.Column(db.Boolean())
-    roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
     posts = db.relationship('Post', backref='author', lazy=True)
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    admin = db.Column(db.Boolean())
+    notes = db.Column(db.UnicodeText)
     followed = db.relationship(
         'User', secondary=followers,
         primaryjoin=(followers.c.follower_id == id),
         secondaryjoin=(followers.c.followed_id == id),
         backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
 
+    def __init__(self, username, email, password, notes='', admin=False):
+        self.username = username
+        self.email = email
+        # self.password = bcrypt.generate_password_hash(password)
+        self.password = password
+        self.admin = admin
+        self.notes = notes
+
+    def is_admin(self):
+        return self.admin
+
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}', '{self.image_file}')"
+        return self.username
 
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
@@ -62,20 +71,14 @@ class User(db.Model, UserMixin):
             followers, (followers.c.followed_id == Post.user_id)).filter(
             followers.c.follower_id == self.id)
         own = Post.query.filter_by(user_id=self.id)
-        return followed.union(own).order_by(Post.date_posted.desc())
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        return followed.union(own).order_by(Post.timestamp.desc())
 
 
-class Role(db.Model, RoleMixin):
-    id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    description = db.Column(db.String(255))
+# def set_password(self, password):
+# self.password_hash = generate_password_hash(password)
 
+# def check_password(self, password):
+# return check_password_hash(self.password_hash, password)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -85,4 +88,14 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
-        return f"Post('{self.title}', '{self.date_posted}')"
+        return self.title
+
+
+class CKTextAreaWidget(widgets.TextArea):
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault('class_', 'ckeditor')
+        return super(CKTextAreaWidget, self).__call__(field, **kwargs)
+
+
+class CKTextAreaField(TextAreaField):
+    widget = CKTextAreaWidget()
