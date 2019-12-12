@@ -57,7 +57,8 @@ def home():
 
 @app.route("/about")
 def about():
-    return render_template('about.html', title='About')
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('about.html', title='About', image_file=image_file)
 
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -109,12 +110,13 @@ def account():
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.about_me = form.about_me.data
-        if bcrypt.check_password_hash(current_user.password, form.old_pass.data):
-            hashed_password = bcrypt.generate_password_hash(form.new_pass.data).decode('utf-8')
-            current_user.password = hashed_password
-        else:
-            flash('Old password is wrong!', 'danger')
-            return redirect('account')
+        if form.old_pass.data:
+            if bcrypt.check_password_hash(current_user.password, form.old_pass.data):
+                hashed_password = bcrypt.generate_password_hash(form.new_pass.data).decode('utf-8')
+                current_user.password = hashed_password
+            else:
+                flash('Old password is wrong!', 'danger')
+                return redirect('account')
         db.session.commit()
         flash('Your account has been updated!', 'success')
         return redirect(url_for('account'))

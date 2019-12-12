@@ -1,7 +1,11 @@
 <component name="ProjectDictionaryState">
   <dictionary name="mykola">
     <words>
+      <w>bcrypt</w>
+      <w>ckeditor</w>
+      <w>datastore</w>
       <w>etalon</w>
+      <w>flaskblog</w>
       <w>perceptron</w>
       <w>summator</w>
       <w>tresshold</w>
