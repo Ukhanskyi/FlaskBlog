@@ -1,11 +1,10 @@
 from datetime import datetime
-from flaskblog import db, login_manager, bcrypt
+from flaskblog import db, login_manager
 from flask_login import UserMixin
 from hashlib import md5
 from wtforms import BooleanField, widgets, TextAreaField
-
-
-# from flask_ckeditor import CKEditorField
+from flask import Flask, request, jsonify, make_response
+import uuid
 
 
 @login_manager.user_loader
@@ -39,7 +38,6 @@ class User(db.Model, UserMixin):
     def __init__(self, username, email, password, notes='', admin=False):
         self.username = username
         self.email = email
-        # self.password = bcrypt.generate_password_hash(password)
         self.password = password
         self.admin = admin
         self.notes = notes
@@ -73,12 +71,9 @@ class User(db.Model, UserMixin):
         own = Post.query.filter_by(user_id=self.id)
         return followed.union(own).order_by(Post.timestamp.desc())
 
+    def is_admin(self):
+        return self.admin
 
-# def set_password(self, password):
-# self.password_hash = generate_password_hash(password)
-
-# def check_password(self, password):
-# return check_password_hash(self.password_hash, password)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)

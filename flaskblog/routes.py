@@ -1,4 +1,4 @@
-from flask import render_template, url_for, flash, redirect, request, abort
+from flask import render_template, url_for, flash, redirect, request, abort, json, jsonify, make_response
 from flaskblog import app, db, bcrypt
 from flaskblog.forms import (RegistrationForm, LoginForm, UpdateAccountForm, PostForm,
                              EditProfileForm, AdminUserCreateForm, AdminUserUpdateForm)
@@ -7,13 +7,17 @@ from flask_login import login_user, current_user, logout_user, login_required
 import os
 import secrets
 import errno
+import shutil
 from PIL import Image
 from datetime import datetime
-# from flask_admin import BaseView, expose, AdminIndexView
-# from flask_admin.contrib.sqla import ModelView
-# from flask_admin.actions import ActionsMixin
-# from wtforms import PasswordField
+from flask_admin import BaseView, expose
+import uuid
 from functools import wraps
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
 
 
 def make_sure_path_exists(path):
@@ -40,19 +44,26 @@ def save_picture(form_picture):
     return os.path.join(current_user.username, picture_fn)
 
 
+def get_photo():
+    return flash(current_user.image_file)
+
+
 @app.before_request
 def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
+        db.session.add(current_user)
         db.session.commit()
 
 
 @app.route("/")
 @app.route("/home")
 def home():
+    users = User.query.all()
     page = request.args.get('page', 1, type=int)
     posts = Post.query.order_by(Post.date_posted.desc()).paginate(page=page, per_page=5)
-    return render_template('home.html', posts=posts)
+
+    return render_template('home.html', posts=posts, users=users)
 
 
 @app.route("/about")
@@ -103,13 +114,19 @@ def logout():
 @login_required
 def account():
     form = UpdateAccountForm()
-    if form.validate_on_submit():
+    if request.method == "POST" and form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        usernn = current_user.username
+
         if form.picture.data:
             picture_file = save_picture(form.picture.data)
             current_user.image_file = picture_file
+            flash('Your account has been updated!', 'success')
+
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.about_me = form.about_me.data
+
         if form.old_pass.data:
             if bcrypt.check_password_hash(current_user.password, form.old_pass.data):
                 hashed_password = bcrypt.generate_password_hash(form.new_pass.data).decode('utf-8')
@@ -117,14 +134,17 @@ def account():
             else:
                 flash('Old password is wrong!', 'danger')
                 return redirect('account')
+
         db.session.commit()
         flash('Your account has been updated!', 'success')
         return redirect(url_for('account'))
+
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.email.data = current_user.email
         form.about_me.data = current_user.about_me
     image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+
     return render_template('account.html', title='Account', image_file=image_file, form=form)
 
 
@@ -175,7 +195,7 @@ def update_post(post_id):
     return render_template('create_post.html', title='Update Post', form=form, legend='Update Post')
 
 
-@app.route("/post/<int:post_id>/delete", methods=['POST'])
+@app.route("/post/<int:post_id>/delete", methods=['GET', 'POST'])
 @login_required
 def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
@@ -318,31 +338,74 @@ def user_delete_admin(id):
     return redirect(url_for('users_list_admin'))
 
 
-'''class HelloView(BaseView):
-    @expose('/')
-    def index(self):
-        return self.render('some-template.html')'''
+# ############################################ API ####################################################
 
-'''class UserAdminView(ModelView, ActionsMixin):
-    column_searchable_list = ('username',)
-    column_sortable_list = ('username', 'admin')
-    column_exclude_list = ('password',)
-    form_excluded_columns = ('password',)
-    form_edit_rules = ('username', 'admin',)
 
-    def is_accessible(self):
-        return current_user.is_authenticated() and current_user.is_admin()
+@app.route('/api/users', methods=['GET'])
+def get_all_users():
+    users = User.query.all()
 
-    def scaffold_form(self):
-        form_class = super(UserAdminView, self).scaffold_form()
-        form_class.password = PasswordField('Password')
-        return form_class
+    output = []
 
-    def create_model(self, form):
-        model = self.model(
-            form.username.data, form.password.data, form.admin.data
-        )
-        form.populate_obj(model)
-        self.session.add(model)
-        self._on_model_change(form, model, True)
-        self.session.commit()'''
+    for user in users:
+        user_data = {}
+        user_data['username'] = user.username
+        user_data['email'] = user.email
+        if type(user.password) == str:
+            user_data['password'] = user.password
+        else:
+            user_data['password'] = user.password.decode('utf-8')
+        user_data['admin'] = user.admin
+        output.append(user_data)
+
+    return jsonify({'users': output})
+
+
+@app.route('/api/users/<id>', methods=['GET'])
+def get_one_user(id):
+    user = User.query.filter_by(id=id).first()
+
+    if not user:
+        return jsonify({'message': 'No user found'})
+
+    user_data = {'username': user.username, 'email': user.email, 'password': user.password,
+                 'admin': user.admin}
+    return jsonify({'user': user_data})
+
+
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    data = request.get_json()
+
+    hashed_password = bcrypt.generate_password_hash(data['password'])
+
+    new_user = User(username=data['username'], email=data['email'],
+                    password=hashed_password, admin=False)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'New user created'})
+
+
+@app.route('/api/users/<id>', methods=['PUT'])
+def promote_user(id):
+    user = User.query.filter_by(id=id).first()
+
+    if not user:
+        return jsonify({'message': 'No user found'})
+
+    user.admin = True
+    db.session.commit()
+
+    return jsonify({'message': 'The user has been promoted'})
+
+
+@app.route('/api/users/<id>', methods=['DELETE'])
+def delete_user(id):
+    user = User.query.filter_by(id=id).first()
+
+    if not user:
+        return jsonify({'message': 'No user found'})
+
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'users': 'The user has been deleted'})

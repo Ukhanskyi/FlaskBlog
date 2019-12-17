@@ -1,20 +1,17 @@
 from flask_login import current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
-from flaskblog.models import User, Post
+from wtforms import widgets, DateTimeField, StringField, PasswordField, SubmitField, BooleanField, TextAreaField
+from wtforms.validators import InputRequired, DataRequired, Length, Email, EqualTo, ValidationError
+from flaskblog.models import User
 
+from flask import flash
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.actions import ActionsMixin
 from flask_admin import BaseView, expose, AdminIndexView
 from flask_admin.form import rules
-
 from flaskblog import bcrypt
-
-
-# from wtforms import BooleanField, widgets, TextAreaField
-# from flask_ckeditor import CKEditor, CKEditorField
+from flask_ckeditor import CKEditor, CKEditorField
 
 
 class RegistrationForm(FlaskForm):
@@ -24,10 +21,16 @@ class RegistrationForm(FlaskForm):
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Sign up')
 
-    def validate_username(self, username):
+    def validate_field(self, field):
+        if True:
+            raise ValidationError('Validation message')
+
+    def validate_username(self, username, field):
         user = User.query.filter_by(username=username.data).first()
         if user:
-            raise ValidationError('That username is taken. Please choose a differrent one')
+            raise ValidationError('That username is taken. Please choose a different one')
+        if User.query.filter_by(username=field.data).first():
+            raise ValidationError('Username already in use.')
 
     def validate_email(self, email):
         if User.query.filter_by(email=email.data).first():
