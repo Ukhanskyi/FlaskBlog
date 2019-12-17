@@ -1,18 +1,14 @@
-from flask import Flask, Blueprint, request, jsonify, make_response
-from flask_ckeditor import CKEditor
-from flask_sqlalchemy import SQLAlchemy
+import os
+import warnings
+
+from flask import Flask, Blueprint
+from flask_admin import Admin
 from flask_bcrypt import Bcrypt
+from flask_ckeditor import CKEditor
 from flask_login import LoginManager
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Manager
-
-
-from flask_admin import Admin, BaseView, expose
-from flask_admin.contrib.sqla import ModelView
-
-import warnings
-import os
-import uuid
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
