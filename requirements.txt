@@ -63,7 +63,7 @@ marshmallow-enum==1.5.1
 marshmallow-sqlalchemy==0.21.0
 mccabe==0.6.1
 more-itertools==8.0.2
-numpy==1.17.4
+numpy==1.22.0
 pandas==0.25.3
 parsedatetime==2.5
 passlib==1.7.2
